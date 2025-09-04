@@ -145,7 +145,7 @@ export default function Home() {
     setSuggestedReplies([]);
 
     // --- Gemini API Call for Chat Response ---
-    const apiKey = "";
+    const apiKey = "AIzaSyBr_ApO2EXSiP5at6sNU6mYVsGCB-jam4c"; // demo key
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
 
     const history = updatedMessages.map(msg => ({
