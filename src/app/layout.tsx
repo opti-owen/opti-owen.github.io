@@ -1,20 +1,16 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import { Roboto, Roboto_Mono } from "next/font/google";
+// Using Inter font for a clean, modern look.
+import { Inter } from "next/font/google";
 
-const robotoSans = Roboto({
-  variable: "--font-roboto-sans",
+const inter = Inter({
   subsets: ["latin"],
-});
-
-const robotoMono = Roboto_Mono({
-  variable: "--font-roboto-mono",
-  subsets: ["latin"],
+  variable: "--font-inter",
 });
 
 export const metadata: Metadata = {
-  title: "Opti-Owen",
-  description: "an example llm frontend for an optimove r&d project.",
+  title: "Optimove",
+  description: "An LLM frontend for an Optimove R&D project.",
 };
 
 export default function RootLayout({
@@ -27,7 +23,7 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
       </head>
-      <body className={`${robotoSans.variable} ${robotoMono.variable} antialiased`}>
+      <body className={`${inter.variable} font-sans antialiased`}>
         {children}
       </body>
     </html>

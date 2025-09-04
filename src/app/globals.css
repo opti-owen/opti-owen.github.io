@@ -3,6 +3,8 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Setting the base font and background/text colors for light and dark modes. */
 body {
+  font-family: var(--font-inter), system-ui, sans-serif;
   @apply bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100;
 }
