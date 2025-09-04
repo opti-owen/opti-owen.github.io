@@ -2,7 +2,6 @@
 import React, { useState, useRef, useEffect, FormEvent, ChangeEvent, useCallback } from 'react';
 import { Menu, X, Send, User, Bot, Globe, KeyRound } from 'lucide-react';
 
-// Reusable Header Component
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);

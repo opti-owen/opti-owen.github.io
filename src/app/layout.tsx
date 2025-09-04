@@ -1,6 +1,5 @@
 import "./globals.css";
 import type { Metadata } from "next";
-// Using Inter font for a clean, modern look.
 import { Inter } from "next/font/google";
 
 const inter = Inter({

@@ -1,37 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Letta } from '@letta-ai/letta-client';
+import { ChatCompletionMessageParam } from '@letta-ai/letta-client/resources/chat/completions';
 
-// This is the new backend API route to handle calls to the Gemini API.
-// It securely uses the API key from environment variables on the server-side.
+const LETTA_AGENT_ID = 'agent-a1ebfeef-cf03-4b22-be73-d83e24306f77';
 
-// Helper function to prepare the payload for the Gemini API
-const prepareGeminiPayload = (messages: { role: string; parts: { text: string }[] }[]) => {
-  // Ensure we don't send an empty contents array
-  if (messages.length === 0) {
-    return { contents: [{ role: 'user', parts: [{ text: 'Hello' }] }] };
-  }
-  return { contents: messages };
+// Helper to map incoming message format to what the Letta client expects.
+const mapMessagesForLetta = (messages: { role: string; parts: { text: string }[] }[]): ChatCompletionMessageParam[] => {
+  return messages.map(msg => ({
+    role: msg.role === 'model' ? 'assistant' : 'user',
+    content: msg.parts[0].text,
+  }));
 };
-
-// Helper function to prepare the payload for suggested replies
-const prepareSuggestionsPayload = (aiMessageText: string) => {
-  const prompt = `Based on this AI response: "${aiMessageText}", suggest three distinct and concise follow-up questions or replies for the user. Keep them very short, like tweet-length.`;
-  return {
-    contents: [{ parts: [{ text: prompt }] }],
-    generationConfig: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: "OBJECT",
-        properties: {
-          replies: {
-            type: "ARRAY",
-            items: { type: "STRING" }
-          }
-        },
-      }
-    }
-  };
-};
-
 
 export async function POST(req: NextRequest) {
   const { messages, apiKey: userApiKey, action } = await req.json();
@@ -45,41 +24,75 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+  const letta = new Letta({ apiKey });
 
   try {
-    let payload;
     if (action === 'get_suggestions' && messages.length > 0) {
-      const lastMessage = messages[messages.length - 1].parts[0].text;
-      payload = prepareSuggestionsPayload(lastMessage);
+      const lastMessageText = messages[messages.length - 1].parts[0].text;
+      const prompt = `Based on this AI response: "${lastMessageText}", suggest three distinct and concise follow-up questions or replies for the user. Keep them very short, like tweet-length.`;
+
+      const response = await letta.chat.completion.create({
+        agent_id: LETTA_AGENT_ID,
+        messages: [{ role: 'user', content: prompt }],
+        response_format: {
+          type: 'json_object',
+          schema: {
+            type: "object",
+            properties: {
+              replies: {
+                type: "array",
+                items: { type: "string" }
+              }
+            },
+          }
+        }
+      });
+
+      const suggestionsJson = response.choices[0]?.message?.content;
+      if (!suggestionsJson) {
+        throw new Error("Failed to get suggestions from the agent.");
+      }
+
+      // Reformat the response to match what the frontend expects
+      return NextResponse.json({
+        candidates: [{
+          content: {
+            parts: [{ text: suggestionsJson }]
+          }
+        }]
+      });
+
     } else {
-      payload = prepareGeminiPayload(messages);
+      const lettaMessages = mapMessagesForLetta(messages);
+
+      const response = await letta.chat.completion.create({
+        agent_id: LETTA_AGENT_ID,
+        messages: lettaMessages.length > 0 ? lettaMessages : [{ role: 'user', content: 'Hello' }],
+      });
+
+      const aiText = response.choices[0]?.message?.content;
+      if (!aiText) {
+        throw new Error("Failed to get a response from the agent.");
+      }
+
+      // Reformat the agent's response to match the original Gemini structure
+      // This minimizes changes needed on the frontend.
+      return NextResponse.json({
+        candidates: [{
+          content: {
+            parts: [{ text: aiText }]
+          }
+        }]
+      });
     }
-
-    const response = await fetch(GEMINI_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      const errorBody = await response.text();
-      console.error("Gemini API Error:", errorBody);
-      return NextResponse.json(
-        { error: `Gemini API request failed with status ${response.status}` },
-        { status: response.status }
-      );
-    }
-
-    const data = await response.json();
-    return NextResponse.json(data);
 
   } catch (error: any) {
-    console.error("Internal Server Error:", error);
+    console.error("Letta API Error:", error);
     return NextResponse.json(
       { error: 'An unexpected error occurred.', details: error.message },
       { status: 500 }
     );
   }
 }
+
 
