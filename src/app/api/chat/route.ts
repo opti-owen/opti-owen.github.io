@@ -1,4 +1,3 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 
 // This is the new backend API route to handle calls to the Gemini API.
@@ -37,8 +36,7 @@ const prepareSuggestionsPayload = (aiMessageText: string) => {
 export async function POST(req: NextRequest) {
   const { messages, apiKey: userApiKey, action } = await req.json();
 
-  // Use the user-provided key or fall back to the environment variable
-  const apiKey = userApiKey || process.env.GEMINI_API_KEY;
+  const apiKey = userApiKey || process.env.API_KEY;
 
   if (!apiKey) {
     return NextResponse.json(
@@ -84,3 +82,4 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
