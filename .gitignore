@@ -1,5 +1,8 @@
+# Node
 node_modules/
+
+# Next
 .next/
-.swc/
-.*.env
+
+# Apple
 .DS_Store
